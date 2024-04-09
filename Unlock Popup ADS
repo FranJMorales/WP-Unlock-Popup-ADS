@@ -1,0 +1,518 @@
+<?php
+/*
+Plugin Name: Unlock Popup ADS
+Description: Genera un pequeño popup en  diferentes secciones de tu web en la que el usuario debe pulsar para poder ver el resto de contenido
+Version: 1.1
+Author: <a href="https://www.fj.mk">FJ</a> | <a href="https://www.digitablesolutions.com">Digitable Solutions</a>
+*/
+// Función para agregar la página de configuración del plugin
+function agregar_pagina_configuracion() {
+    add_options_page(
+        'Configuración de Genera Dinero', // Título de la página
+        'Genera Dinero', // Título del menú
+        'manage_options', // Capacidad requerida
+        'genera-dinero', // Slug del menú
+        'mostrar_pagina_configuracion' // Función para mostrar la página de configuración
+    );
+}
+
+function auto_add_robots_txt_rule() {
+    $rule = "Disallow: /*mejora_cpm=1";
+
+    $robots_txt = ABSPATH . '/robots.txt'; // Ruta al archivo robots.txt en la raíz de WordPress
+
+    if (file_exists($robots_txt)) {
+        // Verifica si el archivo es escribible
+        if (!is_writable($robots_txt)) {
+            // Intenta cambiar los permisos del archivo
+            if (!chmod($robots_txt, 0644)) {
+                error_log('No se pudo cambiar los permisos del archivo robots.txt');
+                return;
+            }
+        }
+
+        $content = file_get_contents($robots_txt);
+        
+        // Verifica si la regla ya existe en el archivo
+        if (strpos($content, $rule) === false) {
+            $content .= "\n" . $rule;
+            file_put_contents($robots_txt, $content);
+        }
+    }
+}
+
+add_action('wp', 'auto_add_robots_txt_rule');
+
+function mostrar_pagina_configuracion() {
+    ?>
+    <div class="wrap">
+        <h1>Configuración de Genera Dinero</h1>
+
+        <!-- Pestañas -->
+        <h2 class="nav-tab-wrapper">
+            <a href="#pestaña-general" class="nav-tab">General</a>
+            <a href="#pestaña-botones" class="nav-tab">Botones</a>
+            <a href="#pestaña-avanzado" class="nav-tab">Avanzado</a>
+        </h2>
+
+        <!-- Contenido de pestañas -->
+        <form method="post" action="options.php">
+            <?php settings_fields('genera-dinero'); ?>
+            <?php do_settings_sections('genera-dinero'); ?>
+
+            <div id="pestaña-general" class="tab-content">
+<h2>Activar Botones De Descargas Fake</h2>
+<p>Esta opción te permite añadir después de cada entrada los botones de descarga.</p>
+<select name="activar_botones">
+    <option value="1" <?php echo selected(1, get_option('activar_botones'), false); ?>>Sí</option>
+    <option value="0" <?php echo selected(0, get_option('activar_botones'), false); ?>>No</option>
+</select>
+            </div>
+
+            <div id="pestaña-botones" class="tab-content">
+                <h2>Color del botón 1</h2>
+                <p>Esta opción te permite cambiar el color del primer botón.</p>
+                <input type="color" name="color_boton1" value="<?php echo esc_attr(get_option('color_boton1', '#007BFF')); ?>">
+
+                <h2>Color del botón 2</h2>
+                <p>Esta opción te permite cambiar el color del segundo botón.</p>
+                <input type="color" name="color_boton2" value="<?php echo esc_attr(get_option('color_boton2', '#1e1c1c')); ?>">
+                <h2>Texto del botón 1</h2>
+                <p>Esta opción te permite cambiar el texto del primer botón.</p>
+                <input type="text" name="texto_boton1" value="<?php echo esc_attr(get_option('texto_boton1', 'Seguir Leyendo')); ?>">
+                <h2>Texto del botón 2</h2>
+                <p>Esta opción te permite cambiar el texto del segundo botón.</p>
+                <input type="text" name="texto_boton2" value="<?php echo esc_attr(get_option('texto_boton2', 'Compartir este artículo')); ?>">
+                <h2>Texto Antes de Botones</h2>
+                <p>Esta opción te permite cambiar el texto por defecto de: Antes de seguir puedes:.</p>
+                <input type="text" name="texto_perso" value="<?php echo esc_attr(get_option('texto_perso', 'Antes de seguir puedes:')); ?>">
+            </div>
+
+            <div id="pestaña-avanzado" class="tab-content">
+                <h2>Direct link de Adsterra</h2>
+                <p>Ingresa tu enlace de "Direct link" de Adsterra.</p>
+                <input type="text" name="direct_link_adsterra" value="<?php echo esc_attr(get_option('direct_link_adsterra')); ?>">
+            </div>
+
+            <!-- Añade más opciones de las pestañas según sea necesario -->
+
+            <?php submit_button('Guardar cambios'); ?>
+        </form>
+    </div>
+
+    <style>
+    .wrap {
+        max-width: 100%;
+        margin: 20px auto;
+        background-color: #f9f9f9;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        color: #333;
+    }
+
+    .nav-tab-wrapper {
+        margin-top: 20px;
+        background-color: #f1f1f1;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .nav-tab {
+        margin-right: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px 5px 0 0;
+        padding: 10px 20px;
+        background-color: #e0e0e0;
+        color: #333;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .nav-tab:hover {
+        background-color: #d2d2d2;
+    }
+
+    .tab-content {
+        display: none;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        padding: 20px;
+        border-radius: 0 0 5px 5px;
+    }
+
+    .tab-content:first-child {
+        display: block;
+    }
+
+    input[type="text"],
+    input[type="color"] {
+    width: 100%; /* Ajusta este valor según tus necesidades */
+}
+    select,
+    input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        margin: 8px 0;
+        box-sizing: border-box;
+    }
+    input[type="checkbox"] {
+        margin-top: 8px;
+    }
+
+    .submit-button {
+        margin-top: 20px;
+    }
+    </style>
+
+    <script>
+        jQuery(document).ready(function ($) {
+            $('.nav-tab-wrapper a[href="#pestaña-general"]').addClass('nav-tab-active');
+            $('.tab-content:first-child').show();
+
+            $('.nav-tab-wrapper a').on('click', function (e) {
+                e.preventDefault();
+                $('.nav-tab-wrapper a').removeClass('nav-tab-active');
+                $(this).addClass('nav-tab-active');
+                $('.tab-content').hide();
+                $($(this).attr('href')).show();
+            });
+        });
+    </script>
+    <?php
+}
+
+// Agrega la función agregar_pagina_configuracion al menú de administración de WordPress
+add_action('admin_menu', 'agregar_pagina_configuracion');
+
+// Registra las opciones de configuración
+function registrar_opciones_configuracion() {
+    register_setting('genera-dinero', 'tiempo_cookie');
+    register_setting('genera-dinero', 'color_boton1');
+    register_setting('genera-dinero', 'color_boton2');
+    register_setting('genera-dinero', 'desactivar_redireccionamiento');
+    register_setting('genera-dinero', 'direct_link_adsterra');
+    register_setting('genera-dinero', 'texto_boton1');
+    register_setting('genera-dinero', 'texto_boton2');
+    register_setting('genera-dinero', 'texto_perso');
+    register_setting('genera-dinero', 'activar_botones');
+    register_setting('genera-dinero', 'max_visitas', array('type' => 'integer', 'default' => 3)); // Agregada la opción max_visitas
+}
+
+// Agrega la función registrar_opciones_configuracion a la acción admin_init de WordPress
+add_action('admin_init', 'registrar_opciones_configuracion');
+
+// Función para recuperar el título y la imagen miniatura del post
+function obtener_datos_post() {
+    global $post;
+    $titulo = get_the_title($post->ID);
+    $imagen_miniatura = get_the_post_thumbnail_url($post->ID);
+
+    return array('titulo' => $titulo, 'imagen_miniatura' => $imagen_miniatura);
+}
+
+// Función para mostrar el modal
+function mostrar_modal() {
+    // Verifica si el usuario está logeado y si es una página de post o página
+    if (is_user_logged_in() || !(is_single() || is_page()) || is_front_page()) {
+        return;
+    }
+    $direct_link_adsterra = get_option('direct_link_adsterra');
+    $color_boton1 = get_option('color_boton1', '#007BFF');
+    $color_boton2 = get_option('color_boton2', '#1e1c1c');
+    $texto_boton1 = get_option('texto_boton1', 'Seguir Leyendo');
+    $texto_boton2 = get_option('texto_boton2', 'Compartir este artículo');
+    $texto_perso = get_option('texto_perso', 'Antes de seguir puedes:');
+    $datos_post = obtener_datos_post();
+
+        echo '
+        <div id="miModal" class="modal">
+            <div class="modal-content">
+                <h2>' . $datos_post['titulo'] . '</h2>
+                <img src="' . $datos_post['imagen_miniatura'] . '" alt="' . $datos_post['titulo'] . '">
+                <h3>' .$texto_perso. '</h3>
+                <button id="boton1" onclick="redireccionarCpm()">' .$texto_boton1. '</button>
+                <div id="barraCarga" style="display: none;">VERIFICANDO QUE ERES HUMANO...</div>
+                <button id="boton2" onclick="redireccionarAdsterra()">' .$texto_boton2. '</button>
+            </div>
+        </div>
+        ';
+
+    // Agrega la función JavaScript para redireccionar
+    echo '
+        <style>
+#barraCarga {
+    position: relative;
+    height: 20px;
+    width: 100%;
+    background-color: #0000FF; /* Azul */
+    color: #FFFFFF; /* Blanco */
+    font-weight: 700; /* Bold */
+    font-size:13px;
+}
+
+#barraCarga::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(to right, #800080 50%, #0000FF 50%); /* Morado y Azul */
+    background-size: 200% 100%;
+    animation: loading 2s linear infinite;
+}
+
+@keyframes loading {
+    100% {
+        background-position: -100% 0;
+    }
+}
+    .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 9999; /* Sit on top, adjust as needed */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: #1f2024bf;
+    }
+
+    /* Modal Content */
+    .modal-content {
+        background-color: #fefefe;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 300px !important;
+        position: absolute; /* Adjust as needed */
+        top: 50%; /* Adjust as needed */
+        left: 50%; /* Adjust as needed */
+        transform: translate(-50%, -50%); /* Center the modal */
+    }
+
+    .modal-content h2 {
+        background-color: #007BFF;
+        color: white;
+        padding: 10px;
+        font-size: 16px;
+    }
+
+    .modal-content h3 {
+        margin-top: 20px;
+        font-size: 16px;
+    }
+
+    .modal-content button#boton1 {
+        background-color: ' . $color_boton1 . ';
+        color: white;
+        border: none;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        font-weight: bold;
+        font-family: maven pro;
+        width: 100%; /* Los botones ocupan todo el modal */
+    }
+    .modal-content button#boton2 {
+        background-color: ' . $color_boton2 . ';
+        color: white;
+        border: none;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        font-weight: bold;
+        font-family: maven pro;
+        width: 100%; /* Los botones ocupan todo el modal */
+    }
+    </style>
+    <script>
+function redireccionarCpm() {
+    var urlActual = window.location.href;
+    var url = new URL(urlActual);
+    var modal = document.getElementById("miModal");
+    var boton1 = document.getElementById("boton1");
+    var barraCarga = document.getElementById("barraCarga");
+    url.searchParams.append("mejora_cpm", "1");
+
+    // Muestra la barra de carga y oculta el botón
+    boton1.style.display = "none";
+    barraCarga.style.display = "block";
+
+    // Espera 3 segundos antes de redireccionar
+    setTimeout(function() {
+        window.location.href = url.href;
+        modal.style.display = "none";
+    }, 8000);
+}
+document.addEventListener("DOMContentLoaded", function() {
+    var urlActual = window.location.href;
+    var url = new URL(urlActual);
+    var boton1 = document.getElementById("boton1");
+    var boton2 = document.getElementById("boton2");
+
+    // Verifica si la URL contiene ?mejora_cpm=1
+    if (url.searchParams.get("mejora_cpm") === "1") {
+        // Si es así, oculta el botón1 y muestra el botón2
+        boton1.style.display = "none";
+        boton2.style.display = "block";
+    }
+});
+function redireccionarAdsterra() {
+    var modal = document.getElementById("miModal");
+    window.open("' . $direct_link_adsterra . '", "_blank");
+    modal.style.display = "none";
+    setTimeout(function(){ modal.style.display = "none"; }, 60000);
+}
+window.onload = function() {
+    var modal = document.getElementById("miModal");
+    var redireccionamientoRealizado = document.cookie.includes("modal_visitas") && (document.cookie.includes("mejora_cpm=1") || document.cookie.includes("adsterra=1"));
+
+    if (redireccionamientoRealizado) {
+        setTimeout(function() {
+            modal.style.display = "none";
+        }, 60000);
+    } else {
+     modal.style.display = "block";
+    }
+}
+    </script>
+    ';
+}
+
+// Agrega la función mostrar_modal al pie de página de WordPress
+add_action('wp_footer', 'mostrar_modal', 1);
+
+function generar_botones() {
+    $direct_link_adsterra = get_option('direct_link_adsterra');
+
+    // Título del post
+    $titulo_post = get_the_title();
+
+    $html = '
+    <div class="manga-download">
+        <h2>Descargar "' . $titulo_post . '" en Español Latino a 1080P</h2>
+        <table class="download-table">
+            <tr>
+                <th>Nombre</th>
+                <th>Estado</th>
+                <th>Descargar</th>
+            </tr>
+            <tr>
+                <td style="text-align: center;">' . $titulo_post . '</td>
+                <td style="text-align: center;">Completo</td>
+                <td id="descargar" style="text-align: center;">
+                    <button id="obtener" onclick="obtenerEnlace()">Obtener enlaces</button>
+                </td>
+            </tr>
+        </table>
+    </div>';
+
+    // Agregar el código JavaScript
+    $html .= '
+    <script>
+    function obtenerEnlace() {
+        // Abre la URL personalizada
+        window.open("' . $direct_link_adsterra . '", "_blank");
+
+        // Cambia el botón a "Comprobando Servidores"
+        document.getElementById("obtener").innerText = "Comprobando Servidores";
+
+        // Espera 10 segundos
+        setTimeout(function() {
+            // Muestra los tres botones
+            document.getElementById("descargar").innerHTML = `
+                <a href="https://mega.nz" target="_blank"><button class="download-button mega">Mega</button></a>
+                <a href="https://mediafire.com" target="_blank"><button class="download-button mediafire">Mediafire</button></a>
+                <a href="https://googledrive.com" target="_blank"><button class="download-button drive">Drive</button></a>
+            `;
+        }, 10000);
+    }
+    </script>';
+
+    // Agregar los estilos CSS
+    $html .= '
+    <style>
+    .manga-download {
+        margin-bottom: 20px;
+    }
+
+    .download-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+        border: 2px solid #f2f2f2;
+        box-shadow: 0px 0px 20px rgba(0,0,0,0.15);
+        font-family: Share, sans-serif;
+    }
+
+    .download-table th, .download-table td {
+        border: 1px solid #dddddd;
+        padding: 8px;
+    }
+
+    .download-table th {
+        background-color: #f2f2f2;
+        text-align: center;
+    }
+
+    .download-button {
+        background-color: #292e4e!important;
+        border: none;
+        color: white;
+        padding: 8px 16px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.3s;
+        font-weight: bold;
+    }
+
+    .download-button:hover {
+        background-color: #1f2140;
+    }
+
+    .download-button.mega {
+        background-color: red;
+    }
+
+    .download-button.mediafire {
+        background-color: blue;
+    }
+
+    .download-button.drive {
+        background-color: green;
+    }
+    </style>';
+
+    return $html;
+}
+add_shortcode('descarga_boton', 'generar_botones');
+
+// Función para agregar el shortcode al final de cada entrada
+function agregar_botones_al_final($content) {
+    if (is_single() && get_option('activar_botones')) {
+        $content .= do_shortcode('[descarga_boton]');
+    }
+    return $content;
+}
+add_filter('the_content', 'agregar_botones_al_final');
+
+?>
